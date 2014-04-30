@@ -209,6 +209,15 @@ public class RandomizedConsesusSession extends Session
 				{
 					val[message.getProcessRank()] = message.getProposal();
 				}
+			/*	else if(round == 0 && phase==0 && decision<0)
+				{
+					SendableEvent newEvent = (SendableEvent)event.cloneEvent();
+					newEvent.setDir(Direction.DOWN);
+					newEvent.setSourceSession(this);					
+					newEvent.init();
+					Propose(1, newEvent);
+				}*/
+					
 				ProceedPhase(message, event);
 			}			
 		} 
