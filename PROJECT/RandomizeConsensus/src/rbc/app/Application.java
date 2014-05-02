@@ -41,7 +41,7 @@ import java.net.InetSocketAddress;
 import java.util.StringTokenizer;
 
 import rbc.bcast.BasicBroadcastLayer;
-import rbc.bcast.MajorityAckURBLayer;
+import rbc.bcast.EagerURBLayer;
 import rbc.consensus.RandomizedConsesusLayer;
 import rbc.util.Commands;
 import rbc.util.ProcessSet;
@@ -154,7 +154,7 @@ public class Application
 	{
 		/* Create layers and put them on a array */
 		Layer[] qos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
-				new MajorityAckURBLayer(),new RandomizedConsesusLayer(), new ApplicationLayer() };
+				new EagerURBLayer(),new RandomizedConsesusLayer(), new ApplicationLayer() };
 
 		/* Create a QoS */
 		QoS myQoS = null;

@@ -12,8 +12,9 @@ public class ConsensusMessage implements Serializable
 	private int phase;
 	private int proposal;
 	private int decision;
+	private int consensusInstance;
 	
-	public void SetProposal(int processRank,int round, int phase,int proposal)
+	public void SetProposal(int processRank,int round, int phase,int proposal,int consensusInstance)
 	{
 		this.isDecision=false;
 		this.processRank=processRank;
@@ -21,9 +22,10 @@ public class ConsensusMessage implements Serializable
 		this.phase=phase;
 		this.proposal=proposal;
 		this.decision=-1;
+		this.consensusInstance=consensusInstance;
 	}
 	
-	public void SetDecision(int processRank,int round, int phase,int decision)
+	public void SetDecision(int processRank,int round, int phase,int decision,int consensusInstance)
 	{
 		this.isDecision=true;
 		this.processRank=processRank;
@@ -31,6 +33,7 @@ public class ConsensusMessage implements Serializable
 		this.phase=phase;
 		this.proposal=-1;
 		this.decision=decision;
+		this.consensusInstance=consensusInstance;
 	}
 
 
@@ -64,5 +67,8 @@ public class ConsensusMessage implements Serializable
 		return decision;
 	}
 	
-	
+	public int getConsensusInstance()
+	{
+		return consensusInstance;
+	}
 }

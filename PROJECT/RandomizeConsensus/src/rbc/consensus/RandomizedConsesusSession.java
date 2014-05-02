@@ -32,6 +32,7 @@
 
 package rbc.consensus;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
@@ -67,9 +68,12 @@ public class RandomizedConsesusSession extends Session
 	private int phase;
 	private int proposal;
 	private int decision;
-	private int[] val;
+	private int[] val_phase1;
+	private int[] val_phase2;
 	private int f;
-
+	private ArrayList<ConsensusMessage> messageBuffer;
+	private int decidedConsensusInstance;
+	private int consesnsusInstance;
 	/**
 	 * Builds a new BEBSession.
 	 * 
@@ -78,36 +82,50 @@ public class RandomizedConsesusSession extends Session
 	public RandomizedConsesusSession(Layer layer)
 	{
 		super(layer);
+		messageBuffer=new ArrayList<ConsensusMessage>();
+		decidedConsensusInstance=-1;
+		consesnsusInstance=1;
 	}
 
 	private void Init()
 	{
 		round = 0;
 		phase = 0;
-		proposal = -1;
-		decision = -1;
+		proposal = -2;
+		decision = -2;
 		f=(processes.getSize()-1)/2;
-		InitVal();
+		ClearPhase1_ValueArray();
+		ClearPhase2_ValueArray();
 	}
 	
-	private void InitVal()
+	private void ClearPhase1_ValueArray()
 	{
-		val = new int[processes.getSize()];
-		for (int i = 0; i < val.length; i++)
+		val_phase1 = new int[processes.getSize()];
+		for (int i = 0; i < val_phase1.length; i++)
 		{
-			val[i] = -1;
+			val_phase1[i] = -2;
 		}
 	}
+	
+	private void ClearPhase2_ValueArray()
+	{
+		val_phase2 = new int[processes.getSize()];
+		for (int i = 0; i < val_phase2.length; i++)
+		{
+			val_phase2[i]=-2;
+		}
+	}
+	
 
 	private void Propose(int value, SendableEvent event)
 	{
 		try
 		{
-			proposal = value;
+			proposal = coin.nextInt(2);
 			round = 1;
 			phase = 1;
 			ConsensusMessage message = new ConsensusMessage();
-			message.SetProposal(processes.getSelfRank(), round, phase, proposal);
+			message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
 			event.getMessage().pushObject(message);
 			event.go();
 			System.out.println("Proposed value by processId = "+processes.getSelfRank());
@@ -196,48 +214,112 @@ public class RandomizedConsesusSession extends Session
 		try
 		{
 			ConsensusMessage message = (ConsensusMessage) event.getMessage().popObject();
-			if(message.isDecision())
+			if(message.getConsensusInstance()==consesnsusInstance)
 			{
-				System.out.println("Decision ="+message.getDecision()+" received from processId = "+message.getProcessRank()+", round = "+message.getRound()+", phase = "+message.getPhase());
-				decision=message.getDecision();
-				SendDecisionToApplication(event);
+				if(message.isDecision())
+				{
+					PrintDetails("Decision received", message);
+					decision=message.getDecision();
+					SendDecisionToApplication(event,message.getConsensusInstance());
+				}
+				else
+				{				
+					if(message.getRound() == this.round && phase==message.getPhase())
+					{
+						if(phase==1)
+						{
+							val_phase1[message.getProcessRank()] = message.getProposal();
+							PrintDetails("Received a proposal and updated val_phase1", message);
+						}
+						if(phase==2)
+						{						
+							val_phase2[message.getProcessRank()] = message.getProposal();
+							PrintDetails("Received a proposal and updated val_phase2", message);
+						}
+					}
+					else
+					{					
+						messageBuffer.add(message);
+						PrintDetails("Buffered message", message);
+					}
+					
+					//If not yet proposed a value, propose automatically
+					if(round == 0 && phase==0 && decision<0)
+					{
+						SendableEvent newEvent = (SendableEvent)event.cloneEvent();
+						newEvent.setDir(Direction.DOWN);
+						newEvent.setSourceSession(this);					
+						newEvent.init();
+						Propose(1, newEvent);
+					}
+					
+					AnalyzeBufferedMessages();
+					ProceedPhase(message, event);
+				}	
 			}
 			else
 			{
-				System.out.println("Proposal = "+message.getProposal()+" received from processId = "+message.getProcessRank()+", round = "+message.getRound()+", phase = "+message.getPhase());
-				if (message.getRound() == this.round && (phase == 1 || phase==2))
+				if(message.isDecision() && message.getConsensusInstance()<consesnsusInstance)
 				{
-					val[message.getProcessRank()] = message.getProposal();
+					System.out.println("Discard message. An olders decision. Already delivered.");
 				}
-			/*	else if(round == 0 && phase==0 && decision<0)
+				else
 				{
-					SendableEvent newEvent = (SendableEvent)event.cloneEvent();
-					newEvent.setDir(Direction.DOWN);
-					newEvent.setSourceSession(this);					
-					newEvent.init();
-					Propose(1, newEvent);
-				}*/
-					
-				ProceedPhase(message, event);
-			}			
+					//Need to think, do we need message.getConsensusInstance()<consesnsusInstance messages to be buffered
+					System.out.println("Wait until the previous decision deliver");
+					messageBuffer.add(message);
+					PrintDetails("Buffered message of a different consensus instance", message);
+				}
+			}
 		} 
 		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
 	}
+	
+	private void AnalyzeBufferedMessages()
+	{
+		ConsensusMessage message;
+		ArrayList<ConsensusMessage> tempMessages=new ArrayList<ConsensusMessage>();
+		for(int i=0;i<messageBuffer.size();i++)
+		{
+			message=messageBuffer.get(i);
+			if(message.getRound()==round && message.getPhase()==phase && message.getConsensusInstance()==consesnsusInstance)
+			{
+				if(phase==1)
+				{
+					val_phase1[message.getProcessRank()]=message.getProposal();
+					tempMessages.add(message);
+					PrintDetails("Recovered an earlier message from",message);
+				}
+				if(phase==2)
+				{
+					val_phase2[message.getProcessRank()]=message.getProposal();
+					tempMessages.add(message);
+					PrintDetails("Recovered an earlier message from",message);
+				}
+			}
+		}
+		
+		for(int i=0;i<tempMessages.size();i++)
+		{
+			messageBuffer.remove(tempMessages.get(i));
+		}
+		
+	}
 
 	private void ProceedPhase(ConsensusMessage message, SendableEvent event)
 	{
 		try
 		{
-			if(phase==1 && decision<0 && CheckMajorityReplied())
+			if(phase==1 && decision<0 && CheckMajorityReplied(val_phase1))
 			{
 				proposal=GetMajorityRepliedValuePhase1();
-				InitVal();
+				ClearPhase1_ValueArray();
 				phase=2;
 				message = new ConsensusMessage();
-				message.SetProposal(processes.getSelfRank(), round, phase, proposal);
+				message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
 				event = (SendableEvent) event.cloneEvent();
 				event.getMessage().pushObject(message);
 				event.setDir(Direction.DOWN);
@@ -246,16 +328,16 @@ public class RandomizedConsesusSession extends Session
 				event.go();
 				System.out.println("ProcessId "+processes.getSelfRank()+" moved to phase 2 of round "+round );
 			}
-			else if(phase==2 && decision<0 && CheckMajorityReplied())
+			else if(phase==2 && decision<0 && CheckMajorityReplied(val_phase2))
 			{
 				phase=0;
-				CoinOutput(coin.nextInt(2), event);
 				System.out.println("ProcessId "+processes.getSelfRank()+" moved to phase 0 of round "+round );
+				CoinOutput(coin.nextInt(2), event);				
 			}
-			else
+		/*	else
 			{
 				System.out.println("ProceedPhase, all conditions has failed for this message");
-			}
+			}*/
 		}
 		catch(Exception ex)
 		{
@@ -276,7 +358,8 @@ public class RandomizedConsesusSession extends Session
 				decision=resultValue;
 				System.out.println("ProcessId "+processes.getSelfRank()+" took the decision = "+decision+" at round "+round );
 				ConsensusMessage message = new ConsensusMessage();
-				message.SetDecision(processes.getSelfRank(), round, phase, decision);				
+				message.SetDecision(processes.getSelfRank(), round, phase, decision,consesnsusInstance);
+				messageBuffer.clear();
 				//Broadcast the decision
 				SendableEvent cloneEvent = (SendableEvent) event.cloneEvent();
 				cloneEvent.getMessage().pushObject(message);
@@ -285,17 +368,17 @@ public class RandomizedConsesusSession extends Session
 				cloneEvent.init();
 				cloneEvent.go();
 				
-				SendDecisionToApplication(event);
-
+				SendDecisionToApplication(event,consesnsusInstance);
 			}
 			else
 			{
 				proposal=resultValue;
-				InitVal();
+				ClearPhase1_ValueArray();
+				ClearPhase2_ValueArray();
 				round=round+1;
 				phase=1;
 				ConsensusMessage message = new ConsensusMessage();
-				message.SetProposal(processes.getSelfRank(), round, phase, proposal);
+				message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
 				event = (SendableEvent) event.cloneEvent();
 				event.getMessage().pushObject(message);
 				event.setDir(Direction.DOWN);
@@ -311,18 +394,21 @@ public class RandomizedConsesusSession extends Session
 		}
 	}
 	
-	private void SendDecisionToApplication(SendableEvent event)
+	private void SendDecisionToApplication(SendableEvent event,int decisionConsensusInstance)
 	{
 		try
 		{
-			ConsensusMessage message = new ConsensusMessage();
-			message.SetDecision(processes.getSelfRank(), round, phase, decision);
-			event.getMessage().pushObject(message);
-			event.go();	
-			
-			System.out.println("ProcessId "+processes.getSelfRank()+" sent the decision = "+decision+" to the application at round "+round );
-			
-			Init();
+			if(decidedConsensusInstance<decisionConsensusInstance)
+			{
+				decidedConsensusInstance=decisionConsensusInstance;
+				ConsensusMessage message = new ConsensusMessage();
+				message.SetDecision(processes.getSelfRank(), round, phase, decision,consesnsusInstance);
+				event.getMessage().pushObject(message);
+				event.go();	
+				System.out.println("ProcessId "+processes.getSelfRank()+" sent the decision = "+decision+" to the application at round "+round +", consensus instance = "+decisionConsensusInstance);
+				consesnsusInstance=decisionConsensusInstance+1;
+				Init();
+			}
 		}
 		catch(AppiaEventException ex)
 		{
@@ -334,7 +420,7 @@ public class RandomizedConsesusSession extends Session
 	private int GetMajorityRepliedValuePhase1()
 	{
 		int value = -1;		
-		HashMap<Integer, Integer> countMap= GetCounterHashMap();
+		HashMap<Integer, Integer> countMap= GetCounterHashMap(val_phase1);
 		if(countMap.size()>0)
 		{
 			int selection;
@@ -359,7 +445,7 @@ public class RandomizedConsesusSession extends Session
 	private String[] GetCoinValuePhase0(int c)
 	{
 		String[] result=new String[2];
-		HashMap<Integer, Integer> countMap= GetCounterHashMap();
+		HashMap<Integer, Integer> countMap= GetCounterHashMap(val_phase2);
 		if(countMap.size()>0)
 		{
 			int selection;
@@ -391,7 +477,7 @@ public class RandomizedConsesusSession extends Session
 		return result;
 	}
 	
-	private HashMap<Integer, Integer> GetCounterHashMap()
+	private HashMap<Integer, Integer> GetCounterHashMap(int[] val)
 	{
 		HashMap<Integer, Integer> countMap = new HashMap<Integer, Integer>();
 		for (int i=0;i<val.length;i++)
@@ -414,13 +500,13 @@ public class RandomizedConsesusSession extends Session
 	}
 
 	
-	private boolean CheckMajorityReplied()
+	private boolean CheckMajorityReplied(int[] val)
 	{
 		boolean hasReplied = false;
 		int count = 0;
 		for (int i = 0; i < val.length; i++)
 		{
-			if (val[i] >= 0)
+			if (val[i] >= -1)
 			{
 				count++;
 			}
@@ -437,5 +523,14 @@ public class RandomizedConsesusSession extends Session
 		}
 		return hasReplied;
 	}
+	
+	private void PrintDetails(String detail,ConsensusMessage message)
+	{
+		PrintDetails(detail,message.getRound(), message.getPhase(), message.getProcessRank(), message.getProposal(), message.getDecision(),message.getConsensusInstance());
+	}
 
+	private void PrintDetails(String message,int round,int phase,int processId,int proposal,int decision,int cinstance)
+	{
+		System.out.println(message +" PID="+processId+", R="+round+", PH="+phase+", PROP="+proposal+", DEC="+decision+", CIN="+cinstance);
+	}
 }

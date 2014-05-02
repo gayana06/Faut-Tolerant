@@ -72,7 +72,7 @@ public class ApplicationReader extends Thread
 				} catch (InterruptedException e)
 				{
 				}
-				System.out.print("> Please type 1 and enter to propose a value.... ");
+				System.out.println("> Please type 1 and enter to propose a value.... ");
 				local = keyb.readLine();				
 				if (local.equals(""))
 					continue;
