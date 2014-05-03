@@ -160,7 +160,10 @@ public class ApplicationSession extends Session
 	{
 		ConsensusMessage message = (ConsensusMessage)event.getMessage().popObject();		
 		System.out.print("Received decision with value: " + message.getDecision() + "\n>");
+		ApplicationNotifier.NotifyMove(message.getDecision(), message.getProcessRank());
 	}
+	
+	
 
 	/**
 	 * @param event
