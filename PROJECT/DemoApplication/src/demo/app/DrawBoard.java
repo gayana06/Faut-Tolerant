@@ -11,6 +11,7 @@ import java.util.Timer;
 
 
 
+
 import javax.swing.*;
 
 public class DrawBoard
@@ -22,7 +23,7 @@ public class DrawBoard
 	private static HashMap<Integer,Agent> agentList;
 	private static JButton[][] buttonGrid;
 	private static final Color GRID_CELL_COLOR=Color.white;
-	private static final Color AGENT_CELL_COLOR=Color.blue;
+	private static final Color AGENT_CELL_COLOR=Color.green;
 	private static final Color PREVIOUS_CELL_COLOR=Color.gray;
 	private static final Color FAILED_CELL_COLOR=Color.red;
 	private static final int FAIL_CHECK_PERIOD=20000;
@@ -41,6 +42,7 @@ public class DrawBoard
 			{
 				buttonGrid[x][y] = new JButton();
 				buttonGrid[x][y].setBackground(GRID_CELL_COLOR);
+				buttonGrid[x][y].setBorder(BorderFactory.createLineBorder(Color.WHITE));
 				contentPane.add(buttonGrid[x][y]);
 			}
 		}
@@ -123,15 +125,17 @@ public class DrawBoard
 		  			agent=agentList.get(i);
 		  			button=buttonGrid[agent.getX()][agent.getY()];
 		  			if(currentTime-agent.getLastUpdateTime() > FAIL_CHECK_PERIOD)
-		  			button.setBackground(FAILED_CELL_COLOR);
-		  			button.setText("PID="+agent.getPid());
+		  			{
+			  			button.setBackground(FAILED_CELL_COLOR);
+			  			button.setText("PID="+agent.getPid());
+		  			}
 		  		}
 		    	  
 		      }
 		}, 0, 10 * 1000);
 	}
 
-	public static void UpdateMovement(int direction, int pid)
+	public static void UpdateMovement(int direction, int pid,int round,int cin)
 	{
 		Agent agent=agentList.get(pid);	
 		agent.setLastUpdateTime();
@@ -151,6 +155,7 @@ public class DrawBoard
 		button=buttonGrid[x][y];
 		button.setBackground(PREVIOUS_CELL_COLOR);
 		button.setText("PID="+agent.getPid());
+		
 		
 		if(direction==UP)
 		{
@@ -173,7 +178,7 @@ public class DrawBoard
 		//draw after move
 		button=buttonGrid[agent.getX()][agent.getY()];
 		button.setBackground(AGENT_CELL_COLOR);
-		button.setText("PID="+agent.getPid());
+		button.setText("PID="+agent.getPid()+" CIN="+cin+" RND="+round);
 	}
 
 }

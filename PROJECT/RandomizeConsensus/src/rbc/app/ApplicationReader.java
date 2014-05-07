@@ -51,6 +51,7 @@ public class ApplicationReader extends Thread
 	private ApplicationSession parentSession;
 	private java.io.BufferedReader keyb;
 	private String local = null;
+	private boolean isRepeat=false;
 
 	public ApplicationReader(ApplicationSession parentSession)
 	{
@@ -59,42 +60,64 @@ public class ApplicationReader extends Thread
 		keyb = new java.io.BufferedReader(new java.io.InputStreamReader(
 				System.in));
 	}
+	
+	public ApplicationReader(ApplicationSession parentSession,boolean isRepeat)
+	{
+		super();
+		this.parentSession = parentSession;
+		this.isRepeat=isRepeat;
+	}
+	
+	
+	
+	public void ProcessInput(String local) throws AppiaEventException
+	{
+		if(local=="")
+			return;
+		if(local.equals("1"))
+			local=Commands.COMMAND_PROPOSE;
+		StringTokenizer st = new StringTokenizer(local);
+		/*
+		 * creates the event, push the message and sends this to the
+		 * appia channel.
+		 */
+		ProcessSendableEvent asyn = new ProcessSendableEvent();
+		Message message = asyn.getMessage();
+		asyn.setCommand(st.nextToken());
+		String msg = "";
+		while (st.hasMoreTokens())
+			msg += (st.nextToken() + " ");
+		message.pushString(msg);
+		asyn.asyncGo(parentSession.channel, Direction.DOWN);
+		
+	}
 
 	public void run()
 	{
 		while (true)
 		{
 			try
-			{
-				try
+			{				
+				if(isRepeat)
 				{
-					Thread.sleep(500);
-				} catch (InterruptedException e)
-				{
+					Thread.sleep(7000);
+					ProcessInput("1");
+					break;
 				}
+				Thread.sleep(500);	
 				System.out.println("> Please type 1 and enter to propose a value.... ");
 				local = keyb.readLine();				
-				if (local.equals(""))
-					continue;
-				if(local.equals("1"))
-					local=Commands.COMMAND_PROPOSE;
-				StringTokenizer st = new StringTokenizer(local);
-				/*
-				 * creates the event, push the message and sends this to the
-				 * appia channel.
-				 */
-				ProcessSendableEvent asyn = new ProcessSendableEvent();
-				Message message = asyn.getMessage();
-				asyn.setCommand(st.nextToken());
-				String msg = "";
-				while (st.hasMoreTokens())
-					msg += (st.nextToken() + " ");
-				message.pushString(msg);
-				asyn.asyncGo(parentSession.channel, Direction.DOWN);
-			} catch (java.io.IOException e)
+				ProcessInput(local);
+			} 
+			catch (java.io.IOException e)
 			{
 				e.printStackTrace();
-			} catch (AppiaEventException e)
+			} 
+			catch (AppiaEventException e)
+			{
+				e.printStackTrace();
+			}
+			catch (Exception e)
 			{
 				e.printStackTrace();
 			}

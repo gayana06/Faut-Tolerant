@@ -74,6 +74,7 @@ public class RandomizedConsesusSession extends Session
 	private ArrayList<ConsensusMessage> messageBuffer;
 	private int decidedConsensusInstance;
 	private int consesnsusInstance;
+	private boolean hasProposed;
 	/**
 	 * Builds a new BEBSession.
 	 * 
@@ -89,6 +90,7 @@ public class RandomizedConsesusSession extends Session
 
 	private void Init()
 	{
+		hasProposed=false;
 		round = 0;
 		phase = 0;
 		proposal = -2;
@@ -117,18 +119,22 @@ public class RandomizedConsesusSession extends Session
 	}
 	
 
-	private void Propose(int value, SendableEvent event)
+	private synchronized void Propose(int value, SendableEvent event)
 	{
 		try
 		{
-			proposal = coin.nextInt(2);
-			round = 1;
-			phase = 1;
-			ConsensusMessage message = new ConsensusMessage();
-			message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
-			event.getMessage().pushObject(message);
-			event.go();
-			System.out.println("Proposed value by processId = "+processes.getSelfRank());
+			if(!hasProposed)
+			{
+				hasProposed=true;
+				proposal = coin.nextInt(2);
+				round = 1;
+				phase = 1;
+				ConsensusMessage message = new ConsensusMessage();
+				message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
+				event.getMessage().pushObject(message);
+				event.go();
+				System.out.println("Proposed value by processId = "+processes.getSelfRank());				
+			}
 		} catch (AppiaEventException ex)
 		{
 			ex.printStackTrace();

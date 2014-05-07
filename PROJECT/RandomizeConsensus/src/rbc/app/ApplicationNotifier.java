@@ -9,11 +9,12 @@ public class ApplicationNotifier
 	private static int applicationPort=50000;
 	private static final String MSG_MOVE="MOVE";
 	
-	public static void NotifyMove(int decision,int pid)
+	public static void NotifyMove(int decision,int pid,int round,int cin)
 	{
 		Socket socket=null;
 		PrintWriter out=null;
-		String message=MSG_MOVE+"|"+decision+"|"+pid;
+		//String message=MSG_MOVE+"|"+decision+"|"+pid;
+		String message=MSG_MOVE+"|"+decision+"|"+pid+"|"+round+"|"+cin;
 		try
 		{			
 			socket = new Socket(applicationIP, applicationPort);        
