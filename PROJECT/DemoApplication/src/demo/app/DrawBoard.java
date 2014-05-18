@@ -18,7 +18,7 @@ public class DrawBoard {
 	private static HashMap<Integer, Agent> agentList;
 	private static JButton[][] buttonGrid;
 	private static final Color GRID_CELL_COLOR = Color.white;
-	private static final Color AGENT_CELL_COLOR = Color.green;
+	private static Color AGENT_CELL_COLOR;
 	private static final Color PREVIOUS_CELL_COLOR = Color.gray;
 	private static final Color FAILED_CELL_COLOR = Color.red;
 	private static final int FAIL_CHECK_PERIOD = 20000;
@@ -104,6 +104,7 @@ public class DrawBoard {
 					button = buttonGrid[agent.getX()][agent.getY()];
 					if (currentTime - agent.getLastUpdateTime() > FAIL_CHECK_PERIOD) {
 						button.setBackground(FAILED_CELL_COLOR);
+						button.setOpaque(true);
 						button.setText("PID=" + agent.getPid());
 					}
 				}
@@ -121,6 +122,7 @@ public class DrawBoard {
 		if (agent.getPreviousx() >= 0 && agent.getPreviousy() >= 0) {
 			button = buttonGrid[agent.getPreviousx()][agent.getPreviousy()];
 			button.setBackground(GRID_CELL_COLOR);
+			button.setOpaque(true);
 			button.setText("");
 		}
 
@@ -132,30 +134,30 @@ public class DrawBoard {
 		button.setText("PID=" + agent.getPid());
 		//1 = Up - Green
 		//2 = Up - Blue
-		//3 = Down - Green
-		//4 = Down - Blue
+		//3 = Down - Yellow
+		//4 = Down - Pink
 		if (direction == 1) {
-			//AGENT_CELL_COLOR = Color.green;
+			AGENT_CELL_COLOR = Color.green;
 			if (y == 0) {
 				agent.setY(BOARD_SIZE - 1);
 			} else {
 				agent.setY(y - 1);
 			}
 		} else if (direction == 3) {
-			//AGENT_CELL_COLOR = Color.blue;
+			AGENT_CELL_COLOR = Color.yellow;
 			if (y == (BOARD_SIZE - 1))
 				agent.setY(0);
 			else
 				agent.setY(y + 1);
 		} else if (direction == 2) {
-			//AGENT_CELL_COLOR = Color.blue;
+			AGENT_CELL_COLOR = Color.blue;
 			if (y == 0) {
 				agent.setY(BOARD_SIZE - 1);
 			} else {
 				agent.setY(y - 1);
 			}
 		} else if (direction == 4) {
-		//	AGENT_CELL_COLOR = Color.green;
+		    AGENT_CELL_COLOR = Color.pink;
 			if (y == (BOARD_SIZE - 1))
 				agent.setY(0);
 			else
@@ -164,6 +166,7 @@ public class DrawBoard {
 		// draw after move
 		button = buttonGrid[agent.getX()][agent.getY()];
 		button.setBackground(AGENT_CELL_COLOR);
+		button.setOpaque(true);
 		button.setText("PID=" + agent.getPid() + " CIN=" + cin + " RND="
 				+ round);
 	}
