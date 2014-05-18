@@ -33,6 +33,7 @@
 package rbc.consensus;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
@@ -70,6 +71,7 @@ public class RandomizedConsesusSession extends Session
 	private int decision;
 	private int[] val_phase1;
 	private int[] val_phase2;
+	private int[] domain_values = {1, 2, 3, 4};
 	private int f;
 	private ArrayList<ConsensusMessage> messageBuffer;
 	private int decidedConsensusInstance;
@@ -126,14 +128,15 @@ public class RandomizedConsesusSession extends Session
 			if(!hasProposed)
 			{
 				hasProposed=true;
-				proposal = coin.nextInt(2);
+				//proposal = coin.nextInt(2);
+				proposal = getRandom(domain_values);
 				round = 1;
 				phase = 1;
 				ConsensusMessage message = new ConsensusMessage();
 				message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
 				event.getMessage().pushObject(message);
 				event.go();
-				System.out.println("Proposed value by processId = "+processes.getSelfRank());				
+				System.out.println("Proposed value by processId = "+processes.getSelfRank()+" Proposed value = "+proposal);				
 			}
 		} catch (AppiaEventException ex)
 		{
@@ -296,6 +299,7 @@ public class RandomizedConsesusSession extends Session
 				if(phase==1)
 				{
 					val_phase1[message.getProcessRank()]=message.getProposal();
+					//values[message.getProcessRank()] = message.getProposal();
 					tempMessages.add(message);
 					PrintDetails("Recovered an earlier message from",message);
 				}
@@ -338,7 +342,8 @@ public class RandomizedConsesusSession extends Session
 			{
 				phase=0;
 				System.out.println("ProcessId "+processes.getSelfRank()+" moved to phase 0 of round "+round );
-				CoinOutput(coin.nextInt(2), event);				
+				CoinOutput(getRandom(domain_values), event);
+				//CoinOutput(coin.nextInt(2), event);				
 			}
 		/*	else
 			{
@@ -362,7 +367,7 @@ public class RandomizedConsesusSession extends Session
 			if(resultIsDecision)
 			{
 				decision=resultValue;
-				System.out.println("ProcessId "+processes.getSelfRank()+" took the decision = "+decision+" at round "+round );
+				System.out.println("ProcessId "+processes.getSelfRank()+" took the decision = "+decision+" at round "+round + " at consensusIntance " + consesnsusInstance );
 				ConsensusMessage message = new ConsensusMessage();
 				message.SetDecision(processes.getSelfRank(), round, phase, decision,consesnsusInstance);
 				messageBuffer.clear();
@@ -503,6 +508,12 @@ public class RandomizedConsesusSession extends Session
 			}
 		}
 		return countMap;
+	}
+	
+	public int getRandom(int[] array)
+	{
+		int randomIndex = new Random().nextInt(array.length);
+		return array[randomIndex];
 	}
 
 	
