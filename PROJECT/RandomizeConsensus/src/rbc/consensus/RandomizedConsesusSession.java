@@ -35,6 +35,7 @@ package rbc.consensus;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -72,6 +73,8 @@ public class RandomizedConsesusSession extends Session
 	private int[] val_phase1;
 	private int[] val_phase2;
 	private int[] domain_values = {1, 2, 3, 4};
+	private int[] values;
+	private int[] nonDuplicatesVals;
 	private int f;
 	private ArrayList<ConsensusMessage> messageBuffer;
 	private int decidedConsensusInstance;
@@ -98,6 +101,7 @@ public class RandomizedConsesusSession extends Session
 		proposal = -2;
 		decision = -2;
 		f=(processes.getSize()-1)/2;
+		values = new int[processes.getSize()];
 		ClearPhase1_ValueArray();
 		ClearPhase2_ValueArray();
 	}
@@ -119,7 +123,6 @@ public class RandomizedConsesusSession extends Session
 			val_phase2[i]=-2;
 		}
 	}
-	
 
 	private synchronized void Propose(int value, SendableEvent event)
 	{
@@ -130,6 +133,7 @@ public class RandomizedConsesusSession extends Session
 				hasProposed=true;
 				//proposal = coin.nextInt(2);
 				proposal = getRandom(domain_values);
+				values[processes.getSelfRank()] = proposal;
 				round = 1;
 				phase = 1;
 				ConsensusMessage message = new ConsensusMessage();
@@ -238,6 +242,7 @@ public class RandomizedConsesusSession extends Session
 						if(phase==1)
 						{
 							val_phase1[message.getProcessRank()] = message.getProposal();
+							values[message.getProcessRank()] = message.getProposal();
 							PrintDetails("Received a proposal and updated val_phase1", message);
 						}
 						if(phase==2)
@@ -299,7 +304,7 @@ public class RandomizedConsesusSession extends Session
 				if(phase==1)
 				{
 					val_phase1[message.getProcessRank()]=message.getProposal();
-					//values[message.getProcessRank()] = message.getProposal();
+					values[message.getProcessRank()] = message.getProposal();
 					tempMessages.add(message);
 					PrintDetails("Recovered an earlier message from",message);
 				}
@@ -342,7 +347,12 @@ public class RandomizedConsesusSession extends Session
 			{
 				phase=0;
 				System.out.println("ProcessId "+processes.getSelfRank()+" moved to phase 0 of round "+round );
-				CoinOutput(getRandom(domain_values), event);
+				nonDuplicatesVals = removeDuplicates(values);
+				for(int i = 0; i<nonDuplicatesVals.length; i++){
+					System.out.println("NonDuplicate "+i+" value = "+nonDuplicatesVals[i]);
+				}
+				System.out.println("choosen value is: "+getRandom(nonDuplicatesVals));
+				CoinOutput(getRandom(nonDuplicatesVals), event);
 				//CoinOutput(coin.nextInt(2), event);				
 			}
 		/*	else
@@ -539,6 +549,22 @@ public class RandomizedConsesusSession extends Session
 				hasReplied=true;
 		}
 		return hasReplied;
+	}
+	
+	public static int[] removeDuplicates(int[] arr){
+	    HashSet<Integer> set = new HashSet<>();
+	    final int len = arr.length;
+	    for(int i = 0; i < len; i++){
+	    	if(arr[i] != 0) //don't allow empty slots to be added.
+	    		set.add(arr[i]);
+	    }
+
+	    int[] whitelist = new int[set.size()];
+	    int i = 0;
+	    for (Iterator<Integer> it = set.iterator(); it.hasNext();) {
+	        whitelist[i++] = it.next();
+	    }
+	    return whitelist;
 	}
 	
 	private void PrintDetails(String detail,ConsensusMessage message)
