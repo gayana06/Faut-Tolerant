@@ -33,7 +33,6 @@
 package rbc.consensus;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -522,7 +521,8 @@ public class RandomizedConsesusSession extends Session
 	
 	public int getRandom(int[] array)
 	{
-		int randomIndex = new Random().nextInt(array.length);
+		//int randomIndex = new Random().nextInt(array.length);
+		int randomIndex =coin.nextInt(array.length);
 		return array[randomIndex];
 	}
 

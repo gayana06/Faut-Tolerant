@@ -12,8 +12,6 @@ import javax.swing.*;
 
 public class DrawBoard {
 	private final static boolean RIGHT_TO_LEFT = false;
-	private final static int UP = 1;
-	private final static int DOWN = 0;
 	private static int BOARD_SIZE = 5;
 	private static HashMap<Integer, Agent> agentList;
 	private static JButton[][] buttonGrid;
@@ -168,7 +166,7 @@ public class DrawBoard {
 		button.setBackground(AGENT_CELL_COLOR);
 		button.setOpaque(true);
 		button.setText("PID=" + agent.getPid() + " CIN=" + cin + " RND="
-				+ round);
+				+ round+" DES="+direction);
 	}
 
 }

@@ -111,6 +111,7 @@ public class BasicBroadcastSession extends Session {
     private void handleChannelInit(ChannelInit init) {
         try {
             init.go();
+            
         } catch (AppiaEventException e) {
             e.printStackTrace();
         }
@@ -127,7 +128,7 @@ public class BasicBroadcastSession extends Session {
         // get an array of processes
     	UniqueProcess[] processArray = this.processes.getAllProcesses();
         SendableEvent sendingEvent = null;
-
+        
         // for each process...
         for (int i = 0; i < processArray.length; i++) {
             try {
