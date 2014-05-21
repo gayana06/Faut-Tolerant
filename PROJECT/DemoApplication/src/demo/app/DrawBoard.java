@@ -19,7 +19,7 @@ public class DrawBoard {
 	private static Color AGENT_CELL_COLOR;
 	private static final Color PREVIOUS_CELL_COLOR = Color.gray;
 	private static final Color FAILED_CELL_COLOR = Color.red;
-	private static final int FAIL_CHECK_PERIOD = 20000;
+	private static final int FAIL_CHECK_PERIOD = 800000;
 
 	public static void addComponentsToPane(Container contentPane) {
 		if (RIGHT_TO_LEFT) {

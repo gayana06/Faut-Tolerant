@@ -33,11 +33,13 @@
 package rbc.consensus;
 
 import rbc.events.ProcessInitEvent;
+import rbc.util.TokenTimer;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
+import net.sf.appia.core.events.channel.Timer;
 
 /**
  * Layer of the Basic Broadcast protocol.
@@ -49,6 +51,7 @@ public class RandomizedConsesusLayer extends Layer {
   public RandomizedConsesusLayer() {
     /* events that the protocol will create */
     evProvide = new Class[0];
+    
 
     /*
      * events that the protocol require to work. This is a subset of the
@@ -59,13 +62,14 @@ public class RandomizedConsesusLayer extends Layer {
     evRequire[1] = ChannelInit.class;
     evRequire[2] = ProcessInitEvent.class;
 
+
     /* events that the protocol will accept */
     evAccept = new Class[4];
     evAccept[0] = SendableEvent.class;
     evAccept[1] = ChannelInit.class;
     evAccept[2] = ChannelClose.class;
     evAccept[3] = ProcessInitEvent.class;
-
+    
   }
 
   /**

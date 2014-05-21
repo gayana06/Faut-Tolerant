@@ -160,11 +160,13 @@ public class ApplicationSession extends Session
 	{
 		try
 		{
-			ConsensusMessage message = (ConsensusMessage)event.getMessage().popObject();		
-			System.out.print("Received decision with value: " + message.getDecision() + "\n>");
-			ApplicationNotifier.NotifyMove(message.getDecision(), message.getProcessRank(),message.getRound(),message.getConsensusInstance());			
-			ApplicationReader repeatReader=new ApplicationReader(this,true);
-			repeatReader.start();
+				ConsensusMessage message = (ConsensusMessage)event.getMessage().popObject();
+				System.out.print("Received MESSAGE PROPOSAL=" + message.getProposal() + "\n>");
+				System.out.print("Received decision with value: " + message.getDecision() + "\n>");
+				ApplicationNotifier.NotifyMove(message.getDecision(), message.getProcessRank(),message.getRound(),message.getConsensusInstance());			
+				ApplicationReader repeatReader=new ApplicationReader(this,true);
+				repeatReader.start();
+			
 		}
 		catch(Exception ex)
 		{

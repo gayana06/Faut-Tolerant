@@ -32,16 +32,24 @@
 
 package rbc.bcast;
 
+import java.util.ArrayList;
+
 import rbc.events.ProcessInitEvent;
+import rbc.events.ProcessSendableEvent;
+import rbc.util.ConsensusMessage;
+import rbc.util.MessageID;
 import rbc.util.ProcessSet;
+import rbc.util.TokenTimer;
 import rbc.util.UniqueProcess;
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.Event;
+import net.sf.appia.core.EventQualifier;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
+import net.sf.appia.core.events.channel.Timer;
 
 
 /**
@@ -50,6 +58,7 @@ import net.sf.appia.core.events.channel.ChannelInit;
  * @author nuno
  * 
  */
+
 public class BasicBroadcastSession extends Session {
 
     /*
@@ -80,13 +89,21 @@ public class BasicBroadcastSession extends Session {
             handleProcessInitEvent((ProcessInitEvent) event);
         else if (event instanceof SendableEvent) {
             if (event.getDir() == Direction.DOWN)
+            {
                 // UPON event from the above protocol (or application)
+            	
                 bebBroadcast((SendableEvent) event);
+            }
             else
+            {
                 // UPON event from the bottom protocol (or perfect point2point links)
                 pp2pDeliver((SendableEvent) event);
+            }
         }
+
     }
+    
+    
 
     /**
      * Gets the process set and forwards the event to other layers.
@@ -96,10 +113,14 @@ public class BasicBroadcastSession extends Session {
     private void handleProcessInitEvent(ProcessInitEvent event) {
         processes = event.getProcessSet();
         try {
-            event.go();
+            event.go();           
         } catch (AppiaEventException e) {
             e.printStackTrace();
         }
+        catch (Exception e) {
+        	 e.printStackTrace();
+		}
+        
     }
 
     /**
@@ -117,51 +138,54 @@ public class BasicBroadcastSession extends Session {
         }
     }
 
+
     /**
      * Broadcasts a message.
      * 
      * @param event
      */
+    
     private void bebBroadcast(SendableEvent event) {
         //    Debug.print("BEB: broadcasting message.");
 
-        // get an array of processes
-    	UniqueProcess[] processArray = this.processes.getAllProcesses();
-        SendableEvent sendingEvent = null;
-        
-        // for each process...
-        for (int i = 0; i < processArray.length; i++) {
-            try {
-                // if it is the last process, don't clone the event
-                if (i == (processArray.length - 1))
-                    sendingEvent = event;
-                else
-                    sendingEvent = (SendableEvent) event.cloneEvent();
 
-                // set source and destination of event message
-                sendingEvent.source = processes.getSelfProcess().getSocketAddress();
-                sendingEvent.dest = processArray[i].getSocketAddress();
-
-                // sets the session that created the event.
-                // this is important when this session is sending a cloned event
-                sendingEvent.setSourceSession(this);
-
-
-                // if it is the "self" process, send the event upwards
-                if (i == processes.getSelfRank())
-                    sendingEvent.setDir(Direction.UP);
-
-                // initializes and sends the message event
-                sendingEvent.init();
-                sendingEvent.go();
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-                return;
-            } catch (AppiaEventException e) {
-                e.printStackTrace();
-                return;
-            }
-        }
+	    	UniqueProcess[] processArray = this.processes.getAllProcesses();
+	        SendableEvent sendingEvent = null;
+	        
+	        // for each process...
+	        for (int i = 0; i < processArray.length; i++) {
+	            try {
+	                // if it is the last process, don't clone the event
+	                if (i == (processArray.length - 1))
+	                    sendingEvent = event;
+	                else
+	                    sendingEvent = (SendableEvent) event.cloneEvent();
+	
+	                // set source and destination of event message
+	                sendingEvent.source = processes.getSelfProcess().getSocketAddress();
+	                sendingEvent.dest = processArray[i].getSocketAddress();
+	
+	                // sets the session that created the event.
+	                // this is important when this session is sending a cloned event
+	                sendingEvent.setSourceSession(this);
+	
+	
+	                // if it is the "self" process, send the event upwards
+	                if (i == processes.getSelfRank())
+	                    sendingEvent.setDir(Direction.UP);
+	
+	                // initializes and sends the message event
+	                sendingEvent.init();
+	                sendingEvent.go();
+	            } catch (CloneNotSupportedException e) {
+	                e.printStackTrace();
+	                return;
+	            } catch (AppiaEventException e) {
+	                e.printStackTrace();
+	                return;
+	            }
+	        }
+		
     }
 
     /**
@@ -170,13 +194,16 @@ public class BasicBroadcastSession extends Session {
      * @param event
      */
     private void pp2pDeliver(SendableEvent event) {
-        // just sends the message event up
-        //    Debug.print("BEB: Delivering message.");
-        try {
-            event.go();
-        } catch (AppiaEventException e) {
-            e.printStackTrace();
-        }
+        // get an array of processes
+   	
+	    	// just sends the message event up
+	        //    Debug.print("BEB: Delivering message.");
+	        try {
+	            event.go();
+	        } catch (AppiaEventException e) {
+	            e.printStackTrace();
+	        }
+		
     }
 
 }

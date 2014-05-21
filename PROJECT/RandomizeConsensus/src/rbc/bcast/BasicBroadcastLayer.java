@@ -33,6 +33,7 @@
 package rbc.bcast;
 
 import rbc.events.ProcessInitEvent;
+import rbc.util.TokenTimer;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
@@ -49,6 +50,7 @@ public class BasicBroadcastLayer extends Layer {
   public BasicBroadcastLayer() {
     /* events that the protocol will create */
     evProvide = new Class[0];
+
 
     /*
      * events that the protocol require to work. This is a subset of the

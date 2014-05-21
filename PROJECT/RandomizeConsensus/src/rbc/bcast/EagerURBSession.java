@@ -7,10 +7,13 @@ import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
 
 
+import net.sf.appia.core.events.channel.Timer;
 import rbc.events.ProcessInitEvent;
+import rbc.util.Commands;
 import rbc.util.ConsensusMessage;
 import rbc.util.MessageID;
 import rbc.util.ProcessSet;
+import rbc.util.TokenTimer;
 import rbc.util.UniqueProcess;
 
 /**
@@ -26,6 +29,9 @@ public class EagerURBSession extends Session
 	private int seqNumber;	
 	private ArrayList<String> deliveredMessages;
 
+    TokenTimer t=null;
+    boolean isHalt;
+    ArrayList<SendableEvent> buffer=new ArrayList<SendableEvent>();
 	/**
 	 * @param layer
 	 */
@@ -51,8 +57,20 @@ public class EagerURBSession extends Session
 			if (event.getDir() == Direction.DOWN)
 				ProcessEventFromTop((SendableEvent) event);
 			else
+			{
+				if(Commands.isDelay)
+					insertTimer((SendableEvent)event);
 				rbDeliver((SendableEvent) event);
+				
+			}
 		}
+    	else if(event instanceof TokenTimer)
+    	{
+    		System.out.println("TIMER HIT..................................................");
+			isHalt=false;
+			Release();
+			t=null;
+    	}
 	}
 
 	private void ProcessEventFromTop(SendableEvent event)
@@ -155,13 +173,61 @@ public class EagerURBSession extends Session
 		MessageID msgID = (MessageID) event.getMessage().peekObject();
 		if (msgID.isReliableBroadcast)
 		{
-			EagerReliableBcastDelivary(event, msgID);
+			if(isHalt)
+			{
+				buffer.add(event);
+				System.out.println("BUFFERED------------------------------");
+			}
+			else
+			{
+				EagerReliableBcastDelivary(event, msgID);
+			}
 		}
 		else
 		{
 			ProcessBestEfforDelivery(event);
 		}
 	}
+	
+    private void Release()
+    {
+    	if(buffer.size()>0)
+    	{
+    		for(int i=0;i<buffer.size();i++)
+    		{
+    			rbDeliver(buffer.get(i));
+    		}
+    		
+    		buffer.clear();
+    	}
+    }
+    
+    private void insertTimer(SendableEvent event)
+    {
+    	try
+    	{
+	    	if(t==null)
+	    	{
+	    		isHalt=true;
+	    		//MessageID m=(MessageID)event.getMessage().peekObject();
+	    		long timeout=1000*processes.getSelfRank()+3000;
+	    		t =new TokenTimer(1000,event.getChannel(),Direction.DOWN,this,EventQualifier.ON);	
+	    		t.setTimeout(timeout);
+				t.go();
+				
+	    	}
+	    	
+	    	
+	    	
+
+    	} 	    	
+    	catch(Exception ex)
+    	{
+    		System.err.println("ERROR----------------");
+    		ex.printStackTrace();
+    	}
+    }
+    
 	
 		
 	private void ProcessBestEfforDelivery(SendableEvent event)

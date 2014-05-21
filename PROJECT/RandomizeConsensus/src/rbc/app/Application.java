@@ -64,6 +64,7 @@ public class Application
 	 *            the number of the self process
 	 * @return a new ProcessSet
 	 */
+
 	private static ProcessSet buildProcessSet(String filename, int selfProc)
 	{
 		BufferedReader reader = null;
@@ -239,7 +240,13 @@ public class Application
 						qos = qos + " " + args[++arg] + " " + args[++arg];
 					}
 					System.out.println("Starting with QoS: " + qos);
-				} else
+				}else if(args[arg].equals("-del"))
+				{
+					arg++;					
+					Commands.isDelay=true;
+					System.out.println("Starting with delay: " + Commands.isDelay);
+				}
+				else
 					invalidArgs("Unknown argument: " + args[arg]);
 				arg++;
 			}

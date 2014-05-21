@@ -37,19 +37,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.ThreadFactory;
 
 import rbc.events.ProcessInitEvent;
 import rbc.events.ProcessSendableEvent;
 import rbc.util.Commands;
 import rbc.util.ConsensusMessage;
 import rbc.util.ProcessSet;
+import rbc.util.TokenTimer;
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.Event;
+import net.sf.appia.core.EventQualifier;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
+import net.sf.appia.core.TimerManager;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
+import net.sf.appia.core.events.channel.Timer;
 
 /**
  * Session implementing the Basic Broadcast protocol.
@@ -137,11 +142,16 @@ public class RandomizedConsesusSession extends Session
 				phase = 1;
 				ConsensusMessage message = new ConsensusMessage();
 				message.SetProposal(processes.getSelfRank(), round, phase, proposal,consesnsusInstance);
+				
 				event.getMessage().pushObject(message);
 				event.go();
 				System.out.println("Proposed value by processId = "+processes.getSelfRank()+" Proposed value = "+proposal);				
 			}
 		} catch (AppiaEventException ex)
+		{
+			ex.printStackTrace();
+		}
+		catch (Exception ex)
 		{
 			ex.printStackTrace();
 		}
@@ -165,6 +175,7 @@ public class RandomizedConsesusSession extends Session
 			else
 				BroadcastDelivery((SendableEvent) event);
 		}
+	
 	}
 
 	private void ProcessAplicationInstructions(SendableEvent event)
@@ -388,7 +399,8 @@ public class RandomizedConsesusSession extends Session
 				cloneEvent.init();
 				cloneEvent.go();
 				
-				SendDecisionToApplication(event,consesnsusInstance);
+				if(!Commands.isDelay)
+					SendDecisionToApplication(event,consesnsusInstance);
 			}
 			else
 			{
